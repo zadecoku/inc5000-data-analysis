@@ -1,0 +1,80 @@
+// ===== INC 5000 - DAX MEASURES =====
+// Ne Power BI: Home > Enter Data > krijo tabele bosh "_Measures", pastaj
+// Modeling > New measure dhe ngjit CILEN NJE nga formulat poshte.
+// Tabela e te dhenave quhet 'inc5000_clean' (emri i skedarit CSV).
+
+Total Companies = COUNTROWS('inc5000_clean')
+
+Total Revenue = SUM('inc5000_clean'[revenue_usd])
+
+Total Revenue (B) = DIVIDE([Total Revenue], 1000000000)
+
+Median Revenue = MEDIAN('inc5000_clean'[revenue_usd])
+
+Avg Growth % = AVERAGE('inc5000_clean'[growth_pct])
+
+Median Growth % = MEDIAN('inc5000_clean'[growth_pct])
+
+Total Workers = SUM('inc5000_clean'[workers])
+
+Avg Company Age = AVERAGE('inc5000_clean'[company_age])
+
+Revenue per Employee = DIVIDE([Total Revenue], [Total Workers])
+
+Repeat Lister % =
+DIVIDE(
+    CALCULATE([Total Companies], 'inc5000_clean'[is_repeat_lister] = "Yes"),
+    [Total Companies]
+)
+
+Share of Companies % =
+DIVIDE(
+    [Total Companies],
+    CALCULATE([Total Companies], ALL('inc5000_clean'))
+)
+
+Share of Revenue % =
+DIVIDE(
+    [Total Revenue],
+    CALCULATE([Total Revenue], ALL('inc5000_clean'))
+)
+
+Clustered Companies =
+CALCULATE([Total Companies], 'inc5000_clean'[is_outlier] = "No")
+
+Outlier Companies =
+CALCULATE([Total Companies], 'inc5000_clean'[is_outlier] = "Yes")
+
+Growth vs All (pp) =
+[Median Growth %] - CALCULATE([Median Growth %], ALL('inc5000_clean'))
+
+Top Industry =
+VAR t = TOPN(1, ALLSELECTED('inc5000_clean'[industry]), [Total Companies], DESC)
+RETURN MAXX(t, 'inc5000_clean'[industry])
+
+Top State (companies) =
+VAR t = TOPN(1, ALLSELECTED('inc5000_clean'[state]), [Total Companies], DESC)
+RETURN MAXX(t, 'inc5000_clean'[state])
+
+Top State (revenue) =
+VAR t = TOPN(1, ALLSELECTED('inc5000_clean'[state]), [Total Revenue], DESC)
+RETURN MAXX(t, 'inc5000_clean'[state])
+
+// Titull dinamik (vendose ne "Title > fx" te nje vizuali)
+Industry Title =
+IF(
+    ISFILTERED('inc5000_clean'[industry]),
+    SELECTEDVALUE('inc5000_clean'[industry], "Disa industri te zgjedhura"),
+    "Te gjitha industrite"
+)
+
+// Formatim i bukur per revenue ne karta (perdore si "Callout value")
+Revenue Label =
+VAR r = [Total Revenue]
+RETURN
+SWITCH(
+    TRUE(),
+    r >= 1000000000, FORMAT(r / 1000000000, "$0.0") & " B",
+    r >= 1000000,    FORMAT(r / 1000000, "$0.0") & " M",
+    FORMAT(r, "$#,##0")
+)
